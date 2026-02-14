@@ -1,0 +1,256 @@
+# Investigation: Heston Dynamics Learning and Control Stability
+
+- [ ] Analyze Heston learning implementation <!-- id: 0 -->
+    - [ ] Read `experiments/learn_heston_kgedmd.py` to understand data generation and training.
+    - [ ] Check if ergodicity is explicitly invoked or if the dataset is constructed from a single long trajectory.
+- [ ] Analyze Control Stability <!-- id: 1 -->
+    - [ ] Read `src/kronic_controller.py` to understand the feedback mechanism.
+    - [ ] Investigate how the error is handled over time (receding horizon vs infinite horizon LQR).
+- [x] synthesize explanation for User <!-- id: 2 -->
+    - [x] Explain "1 sample path" discovery (Ergodicity/Long trajectory).
+    - [x] Explain error propagation (Feedback stabilization/Riccati equation properties).
+- [x] Investigate Latent State Handling <!-- id: 3 -->
+    - [x] Search for "Signature" implementations in `experiments/` to verify if latent state theory is implemented or just proposed.
+    - [x] Compare "Fully Observed" assumption in current code vs "Path Signature" theory.
+    - [x] Explain connection to GPs (Ridge Regression = GP MAP).
+- [x] Explain Signatures vs Bayesian Filtering <!-- id: 4 -->
+    - [x] Read `lie_theoretic_control_link.md` for mathematical justification.
+    - [x] Articulate the difference: State Estimation vs Functional Approximation.
+    - [x] Confirm Signature Kernel connection to GPs.
+- [x] Explain connection to Malliavin/Hida Calculus <!-- id: 5 -->
+    - [x] Search for references in documentation.
+    - [x] Synthesize answer: Malliavin (Calculus of Variations/Hedging) vs Signatures (Algebraic Basis/Rough Paths).
+    - [x] Clarify if Hida calculus is relevant (White Noise analysis vs Pathwise).
+- [x] Establish Formal Theoretical Hierarchy <!-- id: 6 -->
+    - [x] Frame Hida Calculus as the Generalized Space ($\mathcal{S}^*$).
+    - [x] Position Malliavin Calculus as the Smooth Subspace ($\mathbb{D}^{1,2}$).
+    - [x] Define Signatures as the "Taylor Coefficients" of the S-Transform (the numerical bridge).
+- [ ] Investigate Portfolio Optimization Support <!-- id: 7 -->
+    - [x] Analyze `kronic_controller.py` portfolio utility functions.
+    - [x] Determine how *constraints* (e.g., leverage limits, long-only) are currently handled or could be implemented (Projected LQR? MPC?).
+    - [x] Formulate plan to demonstrate constrained portfolio optimization.
+- [x] Analyze Admissibility & Doubling Strategies <!-- id: 8 -->
+    - [x] Explain why Log-Utility naturally satisfies NFLVR (Admissibility condition $W_T \ge 0$).
+    - [x] Assess risk of Quadratic Approximation failing to enforce the $W=0$ barrier numerically.
+- [x] Investigate Dynamic QTE / SDRE <!-- id: 9 -->
+    - [x] Confirm theoretical necessity: Log-Utility curvature $U''(W) = -1/W^2$ implies state-dependent Q matrix.
+    - [x] Check `kronic_controller.py` for Receding Horizon implementation (adaptive Q).
+    - [x] Explain SDRE (State-Dependent Riccati Equation) connection.
+- [x] Rigorous Utility Justification <!-- id: 10 -->
+    - [x] Extract conditions from `financial_economist_exposition.md` (Prop 5.1: $C^3$ smoothness).
+    - [x] Explain Epstein-Zin (Recursive) justification (Theorem 6.1: Separation Ansatz & Hedging Term interaction).
+    - [x] Clarify "Implicitly Defined" nature of EZ and how Bilinear Control captures the hedging demand.
+- [x] Explain Basis Property & Hidden States <!-- id: 11 -->
+    - [x] Articulate Chen's Theorem + Stone-Weierstrass argument (Separation of Points + Shuffle Product).
+    - [x] Address Hidden States: Explain the "Filterability" Assumption (Hidden State must be a functional of Observed Path).
+    - [x] Link Heston Volatility to Quadratic Variation (2nd Order Signature) as the concrete mechanism.
+- [x] Address Local Vol vs Stochastic Vol (The Filtering Limit) <!-- id: 12 -->
+    - [x] Acknowledge user's concern: $dZ_v$ makes the map $X \to v$ stochastic, not deterministic.
+    - [x] Solution: We learn the **Optimal Filter** $\hat{v}_t = E[v_t | \mathcal{F}^X_t]$, not the realization $v_t$.
+    - [x] Explain why Control depends on $\hat{v}_t$ (Separation Principle), and $\hat{v}_t$ *is* a functional of the path.
+- [x] Explain "Priors" in Signature Methods <!-- id: 13 -->
+    - [x] Map Bayesian Parameter Prior $P(\theta)$ to Regression Regularization $\lambda \|w\|^2$.
+    - [x] Explain Ridge Regression as MAP estimate with Gaussian Prior.
+    - [x] Identify Kernel Hyperparameters (Signature decay) as the "Structural Prior" on path dependence complexity.
+- [x] Formalize in Hida-Malliavin Framework <!-- id: 14 -->
+    - [x] Link Kernel Weights to **Wiener Chaos Expansion** weights.
+    - [x] Demonstrate that $\lambda_n$ choice corresponds to selecting the **Sobolev Space** (Hida Test Functions vs Distributions).
+    - [x] Synthesize: "Designing the Kernel = Designing the Norm on White Noise Space".
+- [x] Literature Synthesis <!-- id: 15 -->
+    - [x] Identify the "Common Ground": Gaussian Measures on Banach Spaces (Abstract Wiener Space).
+    - [x] Select connecting texts: Nualart (Malliavin), Bogachev (Gaussian Measures), Stuart (Bayesian Inverse Problems).
+    - [x] Add bibliography to report.
+- [x] Formal Prior-Regularization Mapping <!-- id: 16 -->
+    - [x] Establish the MAP $\iff$ Regularization duality in Infinite Dimensions (Cameron-Martin Norm).
+    - [x] Derive the specific breakdown for Hida-Malliavin spaces via Wiener Chaos weights ($q_n$).
+    - [x] Construct Examples:
+        - [x] Example 1: The "Smooth" Prior (Standard Malliavin Space) $\leftrightarrow$ Factorial Decay.
+        - [x] Example 2: The "Rough" Prior (White Noise Space) $\leftrightarrow$ Polynomial/No Decay.
+    - [x] Explain how this connects to the Signature Kernel weights in implementation.
+- [ ] Enhance Part 1 (Handholding) (User Request) <!-- id: 39 -->
+    - [ ] Section 1: Detailed "Taylor Series" analogy.
+    - [ ] Section 2: Concrete Malliavin Derivative examples ($\int B dB, B_T$).
+    - [ ] Section 3: Step-by-step Stratonovich vs Ito conversion.
+    - [ ] Section 4: Intuitive "Bayesian Belief" vs "Regularization" walkthrough.
+- [ ] Fix Section 10.3 (User Report) <!-- id: 40 -->
+    - [ ] Re-verify and re-apply the "Addressing Circularity" block if missing.
+- [x] Integrate New Literature (Alós 2025 & Oksendal) <!-- id: 17 -->
+    - [x] Link "Factorial Decay" (Prop 5.1 in Alós) to the Smooth Prior ($\lambda_n \propto 1/n!$).
+    - [x] Cite Oksendal ("Hida-Malliavin optimal control") as the control-theoretic foundation.
+    - [x] Validate "Rough Volatility" adaptability (Heston vs Bergomi) using Alós findings.
+- [ ] Create Detailed Unification Document (Rigorous Update) <!-- id: 18 -->
+    - [x] Create initial draft.
+    - [ ] Expand to "Textbook Level" rigor (Definitions, Remarks, Theorems, Corollaries).
+    - [x] Provide full proofs for Isomorphism and Prior Duality.
+    - [x] Detail Levy-Ito Decomposition and Malliavin Derivative operators.
+- [ ] Address Local vs Stochastic Volatility (Formal) <!-- id: 22 -->
+    - [ ] Define Local Vol as Markovian functional.
+    - [ ] Define Stochastic Vol as Latent functional.
+    - [ ] Prove Signature Controller converges to "Optimal Filter" in SV case.
+- [x] Refine Unification Document (Self-Contained) <!-- id: 19 -->
+    - [x] Add "Primer": Bridge Itô Calculus $\to$ Functional Calculus for non-experts.
+    - [x] Add Concrete Mapping Examples (e.g., $\int W_t dt$, Hedging strategies).
+    - [x] Clarify S-Transform intuition vs Taylor Series.
+    - [x] Ensure definitions are accessible to standard stochastic calculus readers.
+- [ ] Expand Section 10.2: "Step-by-Step Case 2: Learning Stochastic Variance" <!-- id: 33 -->
+    - [ ] Restore 3-Approach Structure (Bayes/Malliavin/Signature).
+    - [ ] Step 1 (Bayes): Explicit Prior $v \sim \text{InvGamma}(\alpha, \beta)$. Likelihood $\to$ Posterior.
+    - [ ] Show Posterior Mean is linear in Quadratic Variation $\sum \Delta X^2$.
+    - [x] Step 2 (Malliavin): Project $v$ onto Second Chaos ($I_2$).
+    - [x] Step 3 (Signature): Show matching Level 2 coefficient.
+- [ ] Expand Section 10.3: "Step-by-Step Case 3: The Joint Problem (Drift & Diffusion)" <!-- id: 34 -->
+    - [ ] Target: Joint posterior of $(\mu, v)$.
+    - [ ] Bayes: Normal-Inverse-Gamma (NIG) conjugate prior.
+    - [x] Full algebraic derivation of NIG posterior parameters $(\mu_n, \nu_n, \alpha_n, \beta_n)$.
+    - [x] Show explicitly how $\beta_n$ absorbs the Quadratic Variation term.
+    - [ ] Explicit Coefficient Matching (User Request) <!-- id: 36 -->
+        - [ ] Show Bayesian coeff $c_{Bayes} = \frac{1}{\nu_0 + t}$.
+        - [ ] Show Malliavin kernel $f(s) = \frac{1}{\nu_0 + t}$.
+        - [x] Show Signature weight $\beta_{Ridge} = \frac{1}{\nu_0 + t}$ (under duality map).
+    - [ ] Explain Joint Orthogonality (User Question) <!-- id: 37 -->
+        - [ ] Address circularity: "Why can we project independently?".
+        - [ ] Answer: The *basis* elements ($I_1, I_2$) are orthogonal even if parameters are correlated.
+        - [x] Explain that the estimators live in the *span* of sufficient statistics.
+    - [ ] Clarify Equivalence Scope (User Observation) <!-- id: 41 -->
+        - [ ] Add "Critical Remark: Point Estimate vs Full Distribution".
+        - [ ] Confirm: Ridge Regression $\equiv$ MAP (Mode/Mean for Gaussian).
+        - [ ] Explain: Signature learns the *Sufficient Statistics* ($\hat{\mu}, \hat{v}$) which *define* the full posterior in the conjugate case.
+        - [ ] Conclusion: We learn the *map to the distribution parameters*.
+    - [x] Malliavin: Map sufficient statistics to Chaos.
+    - [x] Signature: Show Multi-Task Regression weights.
+- [ ] Accessible Definitions (User Request) <!-- id: 35 -->
+    - [x] Add "Mathematical Toolkit" section.
+    - [ ] Expand Chaos Intuition (User Request) <!-- id: 38 -->
+        - [ ] Add concrete example: $W_t^2 - t$ (Hermite).
+        - [ ] Add analogy to Taylor Series ($x^n \to H_n(x)$).
+        - [ ] Explain "Orthogonality vs Independence".
+    - [ ] Define **Tensor Algebra**: Non-commutative polynomials.
+    - [ ] Define **Direct Sum ($\oplus$)**: Stacking independent information channels.
+    - [x] Define **Wick Product ($\diamond$)**: Orthogonal multiplication (subtracting trends).
+    - [x] Ensure Section 10 references these definitions clearly.
+- [ ] Generalization: Amortized Inference (User Insight) <!-- id: 42 -->
+    - [ ] Create Section 11: "Signatures as Amortized Variance Inference".
+    - [x] Explain Non-Sufficient Stats case: True MAP is non-linear functional.
+    - [x] Invoke Signature Universality: We approximate *any* continuous map.
+    - [x] Contrast with ELBO/MCMC: Offline training vs Online speed ($O(1)$ inference).
+- [ ] Create Comparison Doc: "Signature vs VI: Amortized Inference" (User Request) <!-- id: 43 -->
+    - [ ] Define "Amortized Inference": Front-loading cost to training time.
+    - [ ] Detail Implementation Steps (Simulation -> Sig -> Ridge -> Inference).
+    - [ ] Theoretical Justification: Universal Approximation $\to$ Conditional Expectation.
+    - [x] Theoretical Justification: Universal Approximation $\to$ Conditional Expectation.
+    - [x] Comparison Table: Latency, Training Cost, Bias, Variance.
+    - [x] Conjectures: High-Freq Suitability, Data Efficiency.
+    - [ ] Literature Review (User Request) <!-- id: 44 -->
+        - [ ] Cite: Bayer et al. (Deep Calibration), Kidger (Neural CDEs), Cohen (Sig-Moments).
+        - [ ] Distinguish: Most use Deep Learning (Black Box). We use Kernel Ridge (Analytic/Malliavin).
+        - [x] Identify Gap: The explicit "Bayesian Prior $\leftrightarrow$ Regularization" duality is often missing in purely applied papers.
+    - [x] Compare with Kevin Murphy (BONG/BONE):
+        - [x] Connection: Online Bayesian Learning (Kalman-like updates for non-linear models).
+        - [x] Distinction: They use Recursive Updates ($O(1)$ cost but accumulation of error). We use Functional Regression (Amortized).
+    - [ ] Recursive Signature Framework (User Request) <!-- id: 46 -->
+        - [ ] Connection: Chen's Identity allows recursive feature updates.
+        - [ ] Algorithm: Sig-RLS (Recursive Least Squares on Signature Features).
+        - [ ] Benefit: Competes "Apples-to-Apples" with BONG (Adaptive) but avoids EKF linearization instability.
+- [ ] AI for Science & Benchmarks (User Request) <!-- id: 45 -->
+    - [ ] Expand Scope: Physics (Lorenz/Hamiltonians), Bio (Lotka-Volterra).
+    - [x] Proposed Benchmarks: Compare Sig-Ridge vs VI/MCMC on:
+        - [x] Parameter Inference in Chaotic Systems (Lorenz 63).
+        - [x] System Identification in Reaction-Diffusion.
+    - [ ] Benchmark Implementation Feasibility (User Request) <!-- id: 47 -->
+        - [ ] Confirm: Sig-Ridge is trivial (requires `iisignature` + `sklearn`).
+        - [x] Confirm: BONG/BONE is implementable (requires `jax`/`pytorch` + EKF logic).
+        - [x] Action: Add BONG/BONE as explicit baseline in Benchmark section.
+    - [ ] Assess SOTA Status (User Request) <!-- id: 48 -->
+        - [ ] Confirm: BONG/BONE is the SOTA for *Online Variational/Gaussian* methods (2024/2025).
+        - [ ] Contrast: "Better" depends on constraints:
+            - [ ] Accuracy? SMC (Particle Filters) is better but $O(N)$.
+            - [x] Speed? BONG and Sig-RLS are tied at $O(1)$.
+            - [x] Non-Stationarity? BONE is best.
+    - [ ] Clarify "Learning on the Fly" (User Question) <!-- id: 49 -->
+        - [ ] Distinction: "Pre-compiling" uses a *Simulator* (Prior Physics), not long real history.
+        - [ ] The Cold Start Problem: What if we have no simulator?
+        - [x] Solution: **Sig-RLS** is the "On the Fly" variant. It starts from zero and learns like BONG.
+    - [x] Conjectured Advantage: Robustness to chaos/stiffness where ELBO gradients explode.
+- [ ] Implement Proofs of Concept (PoC) (User Request) <!-- id: 50 -->
+    - [x] PoC 1: **Amortized Lorenz Inference** (`poc_lorenz_inference.py`)
+        - [x] Task: Infer $\rho$ from Lorenz trajectory using offline-trained Sig-Ridge.
+        - [x] Goal: Show global stability.
+    - [x] PoC 2: **Online Regime Switch** (`poc_online_regime_switch.py`)
+        - [x] Task: Track jumping $\theta$ in OU process using Sig-RLS (Recursive).
+        - [x] Goal: Show fast adaptation "on the fly" without pre-training.
+        - [x] Refinement: High-Fidelity Signal Processing (Lead-Lag, Degree 3).
+    - [x] PoC 3: **Baseline Comparison** (`poc_baseline_comparison.py`) <!-- id: 51 -->
+        - [x] Task: Benchmark Sig-RLS against Kalman Filter (Optimal) and Standard RLS.
+        - [x] Task: Benchmark Sig-RLS against Kalman Filter (Optimal) and Standard RLS.
+        - [x] Goal: Contextualize MSE performance relative to theoretical bounds.
+        - [x] Refinement: **Multi-Scale Autotuning** (Ensemble of Windows).
+    - [x] PoC 4: **Spectral Bandwidth Selection** (`poc_spectral_bandwidth.py`) <!-- id: 53 -->
+        - [x] Task: Use FFT/PSD to analytically derive optimal window $W = 1/f_c$.
+        - [x] Goal: Replace heuristics with physics-based derivation.
+    - [x] PoC 5: **Online CartPole Control** (`poc_cartpole_control.py`) <!-- id: 54 -->
+        - [x] Task: Apply Sig-RLS to learn dynamics of unstable system on-the-fly.
+    - [x] PoC 5: **Online CartPole Control** (`poc_cartpole_control.py`) <!-- id: 54 -->
+        - [x] Task: Apply Sig-RLS to learn dynamics of unstable system on-the-fly.
+        - [x] Goal: Demonstrate "Cold Start" stabilization using MPC on learned signatures.
+    - [ ] PoC 6: **Swing-Up CartPole** (User Request)
+        - [x] Task: Extend PoC 5 to the global "Swing-Up" problem.
+        - [x] Strategy: **Mixed Offline Training** (True Amortization) to solve Catastrophic Forgetting.
+        - [x] Validation: **KRONIC LQR** (Koopman Operator in Feature Space).
+            - [x] Implemented Koopman Learning ($z_{t+1} \approx A z_t + B u_t$).
+            - [x] Implemented Feature-Space LQR ($Q_z = C^T Q C$).
+            - [x] Fixed Data Persistence Bug (`history_x` saving).
+            - [x] Debug: Resolving Empty Z-Matrix in Ridge Regression.
+        - [x] Goal: Use Frozen Sig-RLS model to Stabilization (200/200) and Swing-Up (368/400).
+            - *Note: Pipeline validated. Stabilization Avg Reward ~83. Needs further regularizer tuning.*
+    - [x] PoC 7: **High-Fidelity Control & Performance** (User Request)
+        - [x] Task: Scale simulation to 500Hz (`dt=0.002s`) for higher fidelity actuation.
+        - [x] Task: Benchmark "Lifted LQR" inference speed vs MPC.
+        - [x] Goal: Demonstrate >10x speedup in control latency and stable online learning.
+            - *Result: Inference Latency ~90 $\mu s$. Speedup >100x.*
+        - [x] Task: Attempt "Lifted LQR" for Swing-Up (Global Linearization).
+            - *Result: Failed (Reward 0). Global linear model insufficient with generic Sig features at high fidelity.*
+    - [x] PoC 8: **Intrinsic Coordinates & Modular Kernels** (User Request)
+        - [x] Task: Explain assumption of Tree-like equivalence.
+        - [x] Task: Benchmark Modular Kernels (RFF, Poly, Energy-Sig, Trig-Sig).
+            - *Stabilization:* **Solved**. Poly (~260), Energy-Sig (~223), Trig-Sig (~105), RFF (~150).
+            - *Latency:* Extremely fast (< 10 $\mu s$ for Signatures).
+        - [x] Task: Attempt **Imitation Learning** (Behavioral Cloning) on Sig Features.
+            - *Result: Failed (Reward 0.0). Linear policy $u=Wz$ cannot capture switching.*
+        - [x] Task: Attempt **Bilinear Coupling** ($z' = Az + Bu + \sum u_i N_i z$) with **SDRE Controller**.
+            - *Result: Failed (Reward 0.0). Even with state augmentation and correct targeting, the local tangent approximation of SDRE failed to pump sufficient energy.*
+        - [x] **Conclusion:** Global Linear/Bilinear Koopman on fixed basis handles Stabilization perfectly but fails Swing-Up. Hybrid Control required.
+    - [x] PoC 9: **Anisotropic Noise & Bilinear Control** (User Request)
+        - [x] Task: Implement Klus 2D Anisotropic Double Well ($a(x)$ state-dependent).
+        - [x] Task: Synthesize Bilinear SDRE Controller ($K(state)$).
+        - [x] Result: Stabilized to origin despite noise geometry.
+        - [x] Result: Verified $\sqrt{\Delta t}$ variance scaling Law (20Hz $\to$ 500Hz).
+        - [x] Result: Validated against KRONIC Theory (Eq 33).
+    - [x] PoC 10: **RKHS / Random Fourier Features** (Core Goal)
+        - [x] Task: Implement `KoopmanRKHS` class using RFF.
+        - [x] Task: Verify on Double Well (RBF Verified).
+        - [x] Fix: Implemented `solve_lqr_sdre_kernel` locally.
+        - [x] Success: Gaussian RBF ($\sigma=0.5$) + Saddle Bursts resolved convergence.
+    - [x] PoC 11: **RKHS CartPole Swing-Up** (The Final Test)
+        - [x] Task: Apply "Saddle Burst" logic to CartPole (Upright Stabilization).
+        - [x] Task: Tune Gaussian Bandwidth for 4D/5D state space.
+        - [x] Task: Demonstrate Swing-Up from bottom.
+        - [x] Result: Confirmed Bilinear Structure via implicit Kernel SDRE. 
+            - Achieved Swing-Up (Theta -> 360 deg) using Energy Sampling + Autonomous/Forced Split.
+    - [x] PoC 12: **Strict Feature Centering** (Drift Elimination) <!-- id: 56 -->
+        - [x] Task: Shift feature map $\phi'(x) = \phi(x) - \phi(0)$ to enforce $f(0)=0$.
+        - [x] Result: Verified Drift 0.000000.
+    - [ ] PoC 13: **Spectral Stabilization** (Physics-Informed)
+        - [x] Task: Detect spurious unstable modes (RBF artifacts).
+        - [ ] Task: Clamp dominant mode to physical rate ($\approx 4.0$) and damp others.
+        - [ ] Goal: Stable CartPole swing-up with reasonable gains.
+    - [ ] PoC 14: **Heston Model & Malliavin Calculus** (Next Horizon)
+    - [x] Add CAPM/ICAPM Example <!-- id: 20 -->
+        - [x] Connect Malliavin Calculus to "Beta" estimation (Ratio of Malliavin derivatives).
+        - [x] Introduce Bayesian setup: Parameters (Mean, Cov) as random variables.
+        - [x] Illustrate how Signature learns $Path \to Posterior \to Optimal Weight$.
+- [ ] Add Intuitive "Bridge" (User Feedback) <!-- id: 26 -->
+    - [ ] Add "Intuition" callout blocks before major theorems.
+    - [ ] Use analogies: "Taylor Series", "Gradient Descent on Function Space".
+    - [ ] Explain "Adjoint Process" as "Marginal Value of Wealth".
+- [x] Include in Project Docs <!-- id: 21 -->
+    - [x] Copy `documentation/hida_malliavin_signature_unification.md` to `../rkhs_kronic/documentation/`.
