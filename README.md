@@ -12,7 +12,7 @@ This repository was audited together with its parent. The full write-up is
 
 | Earlier claim | Audit result | How to reproduce |
 |---|---|---|
-| CartPole swing-up, 100 % (50/50) | 1/6 within the script's own 2000-step loop; 5/6 within 8000 steps (160 s of simulated time), median 78 s, about 56 pendulum periods; the cart travels 3.9 to 6.1 m on a track with no limit. With a standard ±2.4 m track: 0/6. | `python examples/audit_cartpole_headline.py 6` |
+| CartPole swing-up, 100 % (50/50) | 1/6 within the script's own 2000-step loop; 5/6 within 8000 steps (160 s of simulated time), median 78 s, about 49 pendulum periods; the cart travels 3.9 to 6.1 m on a track with no limit. With a standard ±2.4 m track: 0/6. | `python examples/audit_cartpole_headline.py 6` |
 | Kuramoto 20-D, stable for 10k steps | Not re-run. The parent repository's own May 2026 note records it as unseeded and without baselines; its seeded rerun gave 0/3 against 3/3 for frequency cancellation. | |
 | Cost reconstruction, 0.12 % mean error | The quantity is kernel ridge regression of the state evaluated back on the state; it is not a cost in eigenfunction coordinates. | |
 | "88x faster" | A k-nearest-neighbour restriction of a local regression. Not re-measured. | |

@@ -9,7 +9,7 @@ and |dtheta| < 0.5 for 100 consecutive steps) are the script's own.
 Three questions:
   1. How often does the start-from-the-bottom run reach the criterion, and how long does
      it take, compared with the 2000-step loop in the script and with the pendulum's own
-     time scale (small-oscillation period ~1.4 s = 70 steps)?
+     time scale (small-oscillation period about the hanging position, 1.58 s = 79 steps)?
   2. How far does the cart travel?  The script's environment has no track limit.
   3. What happens with the standard +-2.4 m limit?
 
@@ -29,6 +29,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("headline", os.path.join(HERE, "experiment_local_koopman_sdre.py"))
 headline = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(headline)          # the script's __main__ block does not run on import
+
+
+# small-oscillation period about the hanging position with the cart free, in steps of dt = 0.02:
+# omega^2 = g / (l (4/3 - mp / (mc + mp))) with the script's g = 9.81, l = 0.5, mc = 1, mp = 0.1
+PERIOD_STEPS = 2 * np.pi / np.sqrt(9.81 / (0.5 * (4 / 3 - 0.1 / 1.1))) / 0.02
 
 
 class Instrumented(headline.LocalKoopmanSDRE):
@@ -109,7 +114,7 @@ if __name__ == "__main__":
     print(f"  -> {len(ok)}/{n} within {budget} steps; {sum(r['steps'] < 2000 for r in ok)}/{n} within the script's own 2000-step loop;")
     if ok:
         print(f"     median time to criterion {np.median([r['steps'] for r in ok]) * 0.02:.0f} s, "
-              f"i.e. ~{np.median([r['steps'] for r in ok]) / 70:.0f} pendulum periods; "
+              f"i.e. ~{np.median([r['steps'] for r in ok]) / PERIOD_STEPS:.0f} pendulum periods; "
               f"cart excursion {min(r['xmax'] for r in free):.1f} .. {max(r['xmax'] for r in free):.1f} m")
     print("\nStandard +-2.4 m track")
     lim = [run(s, budget, track=2.4) for s in range(n)]
