@@ -6,8 +6,10 @@ Kernel Generator EDMD -- LEGACY full-rank (collocation) form.
     G_10[i,j] = b(x_i) . grad_x k(x_i, x_j) + 1/2 a(x_i) : hess_x k(x_i, x_j)
     A = (G_00 + eps I)^+ G_10
 
-The Gram matrices here are correct and match d3s.  What is NOT safe is the way this
-class presents the spectrum, and code written against it inherited the problem:
+The Gram matrices here are correct (in the RKHS-KRONIC repository a test checks that they
+agree to rounding with an implementation verified against finite differences).  What is NOT
+safe is the way this class presents the spectrum, and code written against it inherited
+the problem:
 
 * ``eigenvalues_`` is sorted by DESCENDING modulus.  For a generator that puts the
   least resolved, largest-modulus discretisation artefacts first; ``eigenvalues_[:k]``
