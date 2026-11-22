@@ -1,19 +1,31 @@
 """
-RKHS-KRONIC: Kernel-based Reduced Order Nonlinear Identification and Control
+RKHS-KRONIC controller -- LEGACY implementation, kept for provenance.
 
-This module implements the KRONIC controller architecture that combines:
-1. Kernel Generator EDMD for intrinsic dynamics discovery
-2. Reduced-order modeling in intrinsic coordinates  
-3. Optimal control synthesis using LQR methods
+Do not use this class for new results.  An audit (documentation/salvage_assessment_2026_11.md)
+found that it does not implement the method it is named after:
 
-Key improvements integrated from experimental files:
-- Proper Generator EDMD formulation (kronic_proper_gedmd.py)
-- Adaptive regularization (test_kronic_simplified.py) 
-- Intelligent intrinsic dimension selection (eigenvalue spectrum analysis)
-- Stability enforcement and validation metrics
+* The "intrinsic coordinates" are ``eigenvectors_[:, :n]`` of the legacy estimator, i.e.
+  the n eigenpairs of LARGEST modulus.  For a generator with a Gaussian kernel those are
+  discretisation artefacts, not Koopman eigenfunctions.
+* ``_learn_reduced_dynamics`` differentiates the coordinates by central differences along
+  the SAMPLE INDEX.  That is only meaningful if the training set is one contiguous
+  trajectory with step ``dt``; for i.i.d. samples (as in ``demonstrate_kronic_controller``)
+  it differences unrelated points.  The eigenvalues are then discarded and a generic
+  bilinear model is re-fitted by ridge regression.
+* Failure paths substitute made-up quantities instead of failing: a "stable default"
+  A = -0.1 with a random B if the regression fails, proportional gains if the Riccati
+  equation fails, a diagonal Q if cost regression fails, and ``_ensure_stability`` shifts
+  the identified dynamics by -0.1 I when they are not stable.
+* ``predict_trajectory`` integrates placeholder noise, not a model.
+* The non-affine branch of ``control`` is a stub that calls the affine branch.
+
+The working implementation of the idea is ``src.kernel_kronic`` (residual-verified
+eigenfunctions, jointly learned drift and input generators, state-dependent Riccati
+control, refusal instead of fallbacks), tested in closed loop against analytic KRONIC in
+tests/test_kernel_kronic.py.
 
 References:
-- Kaiser, E., Kutz, J. N., & Brunton, S. L. (2018). Data-driven discovery of 
+- Kaiser, E., Kutz, J. N., & Brunton, S. L. (2021). Data-driven discovery of
   Koopman eigenfunctions for control.
 """
 

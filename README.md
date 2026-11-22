@@ -1,155 +1,73 @@
 # RKHS Koopman Control
 
-Data-driven control via Koopman operators and kernel methods.
+Example scripts for local-linear SDRE control (cart-pole, Kuramoto, double well), split from
+[RKHS-KRONIC](https://github.com/Ed-Mehrez/RKHS-KRONIC) in February 2026.
 
-## Key Results
+## Status, November 2026
 
-| System | Method | Result |
-|--------|--------|--------|
-| **CartPole** | Local Koopman SDRE | **100% success rate** |
-| **Kuramoto 20-D** | Sparse k-NN | **Stable for 10k steps** |
-| **Cost Reconstruction** | Kernel inverse | **0.12% mean error** |
-| **Speedup** | k-NN vs full | **88x faster** |
+This repository was audited together with its parent. The full write-up is
+`documentation/salvage_assessment_2026_11.md` in RKHS-KRONIC. What it means here:
 
-## Core Algorithm: Kernel GEDMD
+**The earlier headline numbers in this README are withdrawn.**
 
-Kernel Extended Dynamic Mode Decomposition following Klus et al.:
+| Earlier claim | Audit result | How to reproduce |
+|---|---|---|
+| CartPole swing-up, 100 % (50/50) | 1/6 within the script's own 2000-step loop; 5/6 within 8000 steps (160 s of simulated time), median 78 s, about 56 pendulum periods; the cart travels 3.9 to 6.1 m on a track with no limit. With a standard ±2.4 m track: 0/6. | `python examples/audit_cartpole_headline.py 6` |
+| Kuramoto 20-D, stable for 10k steps | Not re-run. The parent repository's own May 2026 note records it as unseeded and without baselines; its seeded rerun gave 0/3 against 3/3 for frequency cancellation. | |
+| Cost reconstruction, 0.12 % mean error | The quantity is kernel ridge regression of the state evaluated back on the state; it is not a cost in eigenfunction coordinates. | |
+| "88x faster" | A k-nearest-neighbour restriction of a local regression. Not re-measured. | |
 
-```python
-# Koopman transfer operator
-K_E = C_XY @ inv(C_XX + εI)
+What the cart-pole script actually is: a local-linear model fitted to the 100 nearest
+transitions, an LQR on it with a cost on the angle only, applied from the hanging position.
+Its random fallback never fires. It reaches the upright criterion by eventually passing close
+enough for the local LQR to hold, not by a swing-up strategy.
 
-# Where:
-# C_XX = Φ(X)ᵀ Φ(X)  (Gram matrix)
-# C_XY = Φ(X)ᵀ Φ(Y)  (cross-covariance)
-# Φ(x) = kernel feature map
-```
+**The `src/` package here is a legacy copy.** `src/kgedmd_core.py` and
+`src/kronic_controller.py` carry the defects described in the assessment (see their module
+docstrings). Until this audit they could not be imported at all, because `subsampling.py` had
+not been copied in the split; it has been added so they import. The usage snippet that used to
+be in this README (`KernelGEDMD(kernel, regularization=...)`, `KRONICController(kgedmd, Q=...,
+R=...)`) never matched their signatures.
 
-### SDRE Control in Eigenspace
+**For working code use the parent repository:** `src/kernel_generator.py` (reduced-rank kernel
+gEDMD with residual-verified eigenpairs) and `src/kernel_kronic.py` (KRONIC control with
+jointly learned drift and input generators). There, a pendulum is swung up from data in a few
+swings with torque limited to 10 % of gravity, using a kernel-discovered conserved quantity.
+That mechanism has not been applied to the cart-pole.
 
-State-Dependent Riccati Equation (SDRE) solved in Koopman eigenspace:
-1. Project state to eigenfunctions: z = φ(x)
-2. Solve SDRE: A(z)ᵀP + PA(z) - PBR⁻¹BᵀP + Q = 0
-3. Compute gain: K = R⁻¹BᵀP
-4. Apply control: u = -Kz
+## What runs
 
-## Quick Start
+| Script | State |
+|---|---|
+| `examples/experiment_local_koopman_sdre.py` | runs standalone (writes a GIF) |
+| `examples/audit_cartpole_headline.py` | runs standalone; the audit of the script above |
+| `examples/experiment_kuramoto_scaling.py` | imports resolve; not re-run |
+| `examples/proof_of_concept/poc_rkhs_cartpole_kgedmd.py`, `poc_rkhs_cartpole_principled.py` | imports resolve; not re-run; built on the legacy estimator |
+| `examples/experiment_rkhs_kronic_stabilization.py`, `examples/proof_of_concept/poc_double_well_control.py` | need the `environments` package from the parent repository |
+| `examples/proof_of_concept/poc_rkhs_cartpole.py` | needs `src/models` from the parent repository |
 
 ```bash
-# Setup
-conda env create -f environment.yml
-conda activate rkhs-koopman-control
-
-# Run CartPole stabilization
-python examples/experiment_local_koopman_sdre.py
+pip install numpy scipy matplotlib
+python examples/audit_cartpole_headline.py 6      # about 12 minutes
 ```
 
-## Usage
-
-```python
-from src.kronic_controller import KRONICController
-from src.kgedmd_core import KernelGEDMD, RBFKernel
-
-# Learn Koopman operator from data
-kernel = RBFKernel(sigma=1.5)
-kgedmd = KernelGEDMD(kernel, regularization=1e-5)
-kgedmd.fit(X, X_next)
-
-# Create controller
-controller = KRONICController(kgedmd, Q=np.eye(n), R=0.1*np.eye(m))
-
-# Control loop
-for t in range(horizon):
-    u = controller.compute_control(x)
-    x = env.step(u)
-```
-
-## Project Structure
+## Layout
 
 ```
-rkhs-koopman-control/
-├── src/
-│   ├── kronic_controller.py    # Main KRONIC controller
-│   └── kgedmd_core.py          # Kernel EDMD implementation
-├── examples/
-│   ├── experiment_local_koopman_sdre.py   # CartPole (100% success)
-│   ├── experiment_kuramoto_scaling.py     # 20-D scaling
-│   └── proof_of_concept/
-│       ├── poc_rkhs_cartpole*.py          # CartPole variants
-│       └── poc_double_well*.py            # Double-well control
-└── docs/
-    ├── convex_kernel_control_theory.md
-    ├── sdre_eigenspace_control_theory.md
-    └── principled_rkhs_sdre_theory.md
-```
-
-## Key Innovations
-
-### 1. Local Koopman SDRE
-Sparse k-NN selection (200/5000 samples) for 88x speedup without accuracy loss.
-
-### 2. Kernel Cost Reconstruction
-Learn cost function from expert demonstrations:
-```
-J(x) = ||K(x, ·)||² in RKHS
-```
-Achieves 0.12% mean error across 6 benchmark systems.
-
-### 3. Bilinear SDRE for Control-Affine Systems
-Extended formulation for systems with control-affine structure:
-```
-dx/dt = A(x)x + B(x)u
-```
-
-## Theoretical Foundation
-
-### Koopman Operator Theory
-For a dynamical system dx/dt = f(x), the Koopman operator K acts on observables:
-```
-(Kg)(x) = g(f(x))
-```
-
-Eigenfunctions satisfy: Kφ = λφ
-
-### RKHS Embedding
-Kernel methods provide finite-dimensional approximation:
-- RBF kernel: k(x,y) = exp(-||x-y||²/2σ²)
-- Eigenfunction approximation via Nyström method
-
-See [docs/](docs/) for complete theory.
-
-## Benchmarks
-
-### CartPole Swing-Up
-- Method: Local Koopman SDRE with sparse k-NN
-- Success: 100% (50/50 trials)
-- Time: 0.8ms per control computation
-
-### Kuramoto Oscillator (20-D)
-- Method: Full Kernel GEDMD
-- Stability: 10,000+ steps without divergence
-- Synchronization achieved in ~500 steps
-
-## Citation
-
-```bibtex
-@article{rkhs-koopman-control,
-  title={Data-Driven Control via Koopman Operators in RKHS},
-  author={Mehrez, Edward},
-  journal={In preparation for IEEE TAC},
-  year={2026}
-}
+src/        legacy copies of the estimator and controller (see module docstrings)
+examples/   scripts listed above
+docs/       theory notes and exported assistant sessions from early 2026, not reviewed
 ```
 
 ## References
 
-- Klus et al. "Data-Driven Model Reduction and Transfer Operator Approximation"
-- Williams et al. "A Data-Driven Approximation of the Koopman Operator"
-- Kaiser et al. "Data-Driven Discovery of Koopman Eigenfunctions for Control"
+- Klus, Nüske, Hamzi. Kernel-based approximation of the Koopman generator and Schrödinger
+  operator. *Entropy* 22 (2020).
+- Kaiser, Kutz, Brunton. Data-driven discovery of Koopman eigenfunctions for control.
+  *Mach. Learn.: Sci. Technol.* 2 (2021).
+- Williams, Kevrekidis, Rowley. A data-driven approximation of the Koopman operator:
+  extending dynamic mode decomposition. *J. Nonlinear Sci.* 25 (2015).
 
 ## License
 
 MIT License
-
----
-*Split from [RKHS-KRONIC](https://github.com/Ed-Mehrez/RKHS-KRONIC) repository.*

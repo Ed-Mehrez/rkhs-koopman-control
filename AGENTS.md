@@ -2,67 +2,56 @@
 
 Context for AI coding agents working on this repository.
 
+## Read first
+
+This repository was audited in November 2026. The write-up is
+`documentation/salvage_assessment_2026_11.md` in the parent repository
+([RKHS-KRONIC](https://github.com/Ed-Mehrez/RKHS-KRONIC)); `README.md` here summarises what it
+means for this split. The "Key Results" that used to be listed in this file (CartPole 100 %,
+88x speedup, Kuramoto stable, cost reconstruction 0.12 %) are withdrawn. Do not restate them.
+
 ## Environment
 
-**Use the shared conda environment** - do NOT create a new one:
+Use the shared conda environment; do not create a new one:
 
 ```bash
 conda activate rkhs-kronic-gpu
 ```
 
-The `environment.yml` in this repo is for CI/collaborators only.
+The `environment.yml` in this repo is for CI and collaborators. The audit script needs only
+numpy, scipy and matplotlib.
 
-## Project Overview
+## What is here
 
-Data-driven control via Koopman operators and kernel methods.
+| Path | What it is |
+|------|------------|
+| `examples/experiment_local_koopman_sdre.py` | local-linear SDRE on a cart-pole, standalone |
+| `examples/audit_cartpole_headline.py` | instrumented audit of the script above |
+| `examples/experiment_kuramoto_scaling.py` | Kuramoto script, not re-run in the audit |
+| `src/kgedmd_core.py`, `src/kronic_controller.py` | **legacy copies** with known defects (module docstrings) |
 
-**Core Algorithm**: Kernel GEDMD (following Klus et al.)
-```
-K_E = C_XY @ inv(C_XX + εI)
-```
+Current, tested estimator and controller code lives in the parent repository:
+`src/kernel_generator.py` and `src/kernel_kronic.py`.
 
-## Key Files
+## Rules
 
-| File | Purpose |
-|------|---------|
-| `src/kronic_controller.py` | Main KRONIC controller with SDRE |
-| `src/kgedmd_core.py` | Kernel EDMD implementation |
-| `examples/experiment_local_koopman_sdre.py` | CartPole (100% success) |
-| `examples/experiment_kuramoto_scaling.py` | 20-D scaling test |
-
-## Build & Test
-
-```bash
-# Run CartPole stabilization
-python examples/experiment_local_koopman_sdre.py
-
-# Run Kuramoto scaling
-python examples/experiment_kuramoto_scaling.py
-```
-
-## Critical Knowledge
-
-### Key Results
-- CartPole: 100% success rate
-- 88x speedup via sparse k-NN (200/5000 samples)
-- 20-D Kuramoto: Stable for 10k+ steps
-- Kernel cost reconstruction: 0.12% mean error
-
-### Local Koopman SDRE
-Use sparse k-NN selection for massive speedup without accuracy loss.
-
-### RBF Kernel Parameters
-Default: `sigma=1.5`, `regularization=1e-5`
-These are universal across many systems.
+- A generator's largest-modulus eigenvalues are the least resolved. Never take
+  `eigenvalues_[:k]` from the legacy estimator as "dominant modes".
+- There are no universal kernel parameters. Bandwidth and rank are chosen by validation on
+  held-out data, never by distance to an expected answer.
+- No fallbacks that substitute made-up quantities (random actions, default gains). Count the
+  failure and report it.
+- A success rate is reported with its step budget, its state constraints (a cart-pole has a
+  track) and a classical time scale next to it.
+- A comparison between controllers gives both the same cost matrices and includes the trivial
+  baselines.
 
 ## Conventions
 
-- Python 3.10+
-- NumPy/SciPy for numerics
-- `gymnasium` for control environments
+- Python 3.10+, NumPy/SciPy
 - Type hints encouraged
 
-## Related Repositories
+## Related repositories
 
 - Parent: [RKHS-KRONIC](https://github.com/Ed-Mehrez/RKHS-KRONIC)
 - Sibling: [fsde-identifiability](https://github.com/Ed-Mehrez/fsde-identifiability)

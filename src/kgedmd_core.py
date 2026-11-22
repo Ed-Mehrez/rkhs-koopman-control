@@ -1,20 +1,39 @@
 #!/usr/bin/env python3
 """
-Fixed Kernel Generator EDMD - d3s Style Implementation
+Kernel Generator EDMD -- LEGACY full-rank (collocation) form.
 
-This implements the CORRECT kernel Generator EDMD following Stefan Klus's d3s formulation.
-Key fixes:
-1. Correct G_10 matrix computation: Y.T @ k.diff(X_i, X_j) 
-2. Vectorized implementation of d3s loops
-3. General enough for extended states z = [x, u]
-4. Verification against d3s reference implementation
+    G_00[i,j] = k(x_i, x_j)
+    G_10[i,j] = b(x_i) . grad_x k(x_i, x_j) + 1/2 a(x_i) : hess_x k(x_i, x_j)
+    A = (G_00 + eps I)^+ G_10
 
-Mathematical Foundation (from d3s):
-- G_00[i,j] = k(x_i, x_j)                    # Standard Gram matrix
-- G_10[i,j] = b(x_i).T @ ∇k(x_i, x_j)       # Dynamics dotted with kernel gradient
+The Gram matrices here are correct and match d3s.  What is NOT safe is the way this
+class presents the spectrum, and code written against it inherited the problem:
 
-For stochastic systems, add diffusion term:
-- G_10[i,j] += 0.5 * Σ(σσᵀ * ∇²k(x_i, x_j))
+* ``eigenvalues_`` is sorted by DESCENDING modulus.  For a generator that puts the
+  least resolved, largest-modulus discretisation artefacts first; ``eigenvalues_[:k]``
+  is therefore not "the k dominant modes".  (d3s' generator routine ``gedmd`` calls
+  ``sortEig(A, evs, which='SM')``: the eigenvalues of SMALLEST modulus.)  With a
+  rank-deficient kernel (linear, low-degree polynomial) the
+  null space contributes exact zeros, so ``[:k]`` happens to work there; with a Gaussian
+  kernel it returns junk.
+* A is m x m although a Gaussian Gram matrix has numerical rank r << m.  The other
+  m - r eigenpairs are functions that vanish on the data.
+* In-sample residuals are zero by construction (collocation), so nothing can be
+  verified without held-out data.
+* ``fit(..., dt=...)`` applies log(1 + dt*lambda)/dt to the eigenvalues.  That inverts
+  the Euler bias only for eigenfunctions that are linear in x; for products of
+  eigenfunctions it is wrong at first order in dt.  With snapshot pairs use
+  ``kernel_generator.KernelKoopman``.
+* The diffusion argument ``Z`` is the covariance a = sigma sigma^T, of shape
+  (d, d, m), NOT sigma.  d3s takes sigma and forms sigma sigma^T itself
+  (``S = einsum('ijk,ljk->ilk', Z, Z)`` in ``gedmd``); passing sigma here, as the old
+  docstring said, gives the wrong generator unless sigma = sigma sigma^T.
+
+Use ``src.kernel_generator.KernelGenerator`` from the RKHS-KRONIC repository for new work:
+reduced rank, residual-ranked, verified against known spectra there.  This copy is kept
+because the example scripts import it.  See
+documentation/salvage_assessment_2026_11.md in the RKHS-KRONIC repository for the
+before/after numbers.
 """
 
 import numpy as np
@@ -30,7 +49,8 @@ try:
 except ImportError:
     from subsampling import subsample
 
-warnings.filterwarnings('ignore')
+# NOTE: this module used to call warnings.filterwarnings('ignore') at import time, which
+# silenced every warning in the process.  Removed.
 
 
 class RBFKernel:
@@ -253,7 +273,8 @@ def generator_gram_matrix_d3s_loops(X: np.ndarray,
         X: State data (d × m) - d3s format
         Y: Dynamics b(X) (d × m) - d3s format  
         kernel: RBF kernel with diff() and ddiff() methods
-        Z: Diffusion term σ(X) (d × d × m) for stochastic systems
+        Z: Diffusion covariance σσᵀ(X) (d × d × m) for stochastic systems
+           (the covariance itself, not σ)
         
     Returns:
         G_10: Generator Gram matrix (m × m)
@@ -503,7 +524,8 @@ class KernelGEDMD:
         Args:
             X: State data (m × d) or (d × m) - will auto-detect format
             Y: Dynamics b(X) - same format as X
-            Z: Diffusion σ(X) (d × d × m) for stochastic systems
+            Z: Diffusion covariance σσᵀ(X) (d × d × m) for stochastic systems
+               (the covariance itself, not σ)
             
         Returns:
             self: Fitted estimator
@@ -591,7 +613,8 @@ class KernelGEDMD:
         # Eigendecomposition
         eigenvals, eigenvecs = eig(A)
         
-        # Sort by magnitude (d3s convention)
+        # LEGACY ORDER: descending modulus.  This is NOT the d3s convention for a
+        # generator (d3s' gedmd uses which='SM'); see the module docstring.
         idx = np.argsort(np.abs(eigenvals))[::-1]
         self.eigenvalues_ = eigenvals[idx]
         self.eigenvectors_ = eigenvecs[:, idx]
