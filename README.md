@@ -33,7 +33,17 @@ R=...)`) never matched their signatures.
 gEDMD with residual-verified eigenpairs) and `src/kernel_kronic.py` (KRONIC control with
 jointly learned drift and input generators). There, a pendulum is swung up from data in a few
 swings with torque limited to 10 % of gravity, using a kernel-discovered conserved quantity.
-That mechanism has not been applied to the cart-pole.
+
+**The cart-pole swing-up now works there, on a bounded track.** The same plant as the script
+audited above, but with the force limited to 10 N (the script allowed 30 N) and a ±2.4 m track
+(the script had none): the controller swings up and holds from 101/101 starts it was not
+designed on, upright and at rest within 5.0 s (about three pendulum periods), with every
+quantity it uses learned from 2,500 random samples by one kernel generator. The saturated
+oracle LQR alone manages 25/101. See `experiments/salvage/cartpole_swingup.py`,
+`tests/test_cartpole_swingup.py` and section 3.5 of the assessment in the parent repository.
+It is a different method from the script here (a conserved quantity, a momentum chain and an
+LQR catch, not a local-linear SDRE), so it replaces the withdrawn claim rather than restoring
+it.
 
 ## What runs
 

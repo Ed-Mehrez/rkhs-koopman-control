@@ -31,7 +31,9 @@ numpy, scipy and matplotlib.
 | `src/kgedmd_core.py`, `src/kronic_controller.py` | **legacy copies** with known defects (module docstrings) |
 
 Current, tested estimator and controller code lives in the parent repository:
-`src/kernel_generator.py` and `src/kernel_kronic.py`.
+`src/kernel_generator.py` and `src/kernel_kronic.py`. The working cart-pole swing-up (bounded
+track, 10 N) is there too: `experiments/salvage/cartpole_swingup.py`. Build on that, not on
+the local-linear SDRE script in this repository.
 
 ## Rules
 
